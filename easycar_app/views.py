@@ -5,8 +5,6 @@ from .models import Car
 from .serializers import CarSerializer
 
 
-# Create your views here.
-
 class CarListCreateView(generics.ListCreateAPIView):
     queryset = Car.objects.all()
     serializer_class = CarSerializer
