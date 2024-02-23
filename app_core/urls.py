@@ -19,6 +19,6 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path("", include("easycar_app.urls"))
-
+    path('api/auth/', include('easycar_backend.urls')),
+    path("", include("easycar_backend.urls")),
 ]

@@ -27,6 +27,13 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+}
+
 
 # Application definition
 
@@ -39,21 +46,22 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'corsheaders',
-    'easycar_app'
+    'easycar_backend',
+    'rest_framework_simplejwt.token_blacklist',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'senior_project.urls'
+ROOT_URLCONF = 'app_core.urls'
 
 TEMPLATES = [
     {
@@ -71,7 +79,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'senior_project.wsgi.application'
+WSGI_APPLICATION = 'app_core.wsgi.application'
 
 
 
@@ -80,12 +88,12 @@ WSGI_APPLICATION = 'senior_project.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'easycar_db',
-        'USER': 'root',
-        'PASSWORD': 'easycarKazakhstan2023',
-        'HOST': 'localhost',        # Your database host
-        'PORT': '3306',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'daov420s97qaa0',
+        'USER': 'dqqzuzqfzhnlae',
+        'PASSWORD': 'ec115eddbe14fac512cf997d3a810428e32e2718c866b30854b87ad72cc2815f',
+        'HOST': 'ec2-54-246-1-94.eu-west-1.compute.amazonaws.com',        # Your database host
+        'PORT': '5432',
     }
 }
 
@@ -137,6 +145,7 @@ CORS_ALLOW_ALL_ORIGINS = True
 
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
+    'http://localhost:3001',
 ]
 
 CORS_ALLOW_METHODS = [
