@@ -11,15 +11,33 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
-
+from rest_framework.views import APIView
 from .models import Car
 from .serializers import CarSerializer
-
+from .serializers import PaymentSerializer
+from rest_framework.response import Response
+class PaymentView(APIView):
+    def post(self, request, *args, **kwargs):
+        serializer = PaymentSerializer(data=request.data)
+        if serializer.is_valid():
+            # Process the payment here
+            # For now, we'll just return the validated data
+            return Response(serializer.validated_data, status=200)
+        return Response(serializer.errors, status=400)
 
 class CarListCreateView(generics.ListCreateAPIView):
     queryset = Car.objects.all()
     serializer_class = CarSerializer
 
+@csrf_exempt 
+def create_booking(request):
+    if request.method == 'POST':
+        # Logic to handle booking creation goes here
+        # For example, save booking details to the database
+        
+        return JsonResponse({'message': 'Booking created successfully'}, status=201)
+    else:
+        return HttpResponseBadRequest('Invalid request method')
 
 @api_view(['POST'])
 @parser_classes((MultiPartParser, FormParser))

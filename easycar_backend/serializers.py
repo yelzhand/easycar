@@ -3,7 +3,12 @@ from rest_framework import serializers
 from .models import Car
 
 User = get_user_model()
-
+class PaymentSerializer(serializers.Serializer):
+    cardNumber = serializers.CharField(max_length=16)
+    expiryDate = serializers.CharField(max_length=5)
+    cvv = serializers.CharField(max_length=3)
+    nameOnCard = serializers.CharField(max_length=100)
+    consent = serializers.BooleanField()
 
 class CarSerializer(serializers.ModelSerializer):
     class Meta:
