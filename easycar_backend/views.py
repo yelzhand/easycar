@@ -14,7 +14,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import Car
 from .serializers import CarSerializer
-
+from django.db import IntegrityError
 
 class CarListCreateView(generics.ListCreateAPIView):
     queryset = Car.objects.all()
@@ -25,16 +25,22 @@ class CarListCreateView(generics.ListCreateAPIView):
 @parser_classes((MultiPartParser, FormParser))
 @permission_classes([IsAuthenticated])  # Ensure that the user is authenticated
 def car_create_view(request, format=None):
-    print("Car create view entered")
+    # Extract license_plate and vin from the request
+    license_plate = request.data.get('license_plate')
+    vin = request.data.get('vin')
+
+    # Check for existing cars with the same license plate or VIN
+    if Car.objects.filter(license_plate=license_plate).exists():
+        return JsonResponse({'license_plate': 'A car with this license plate already exists.'}, status=400)
+    if Car.objects.filter(vin=vin).exists():
+        return JsonResponse({'vin': 'A car with this VIN number already exists.'}, status=400)
+
+    # Continue with car creation if no duplicates are found
     serializer = CarSerializer(data=request.data)
     if serializer.is_valid():
         serializer.save(owner=request.user)
-        owner = request.user
-        print("serializer is valid")
-        print("Owner is:" + str(owner))
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 class CarDetailsView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Car.objects.all()
@@ -58,17 +64,22 @@ def register(request):
             return JsonResponse({'error': 'All fields are required.'}, status=400)
 
         # Use create_user instead of create to handle password hashing
-        user = User.objects.create_user(
-            username=data['username'],
-            first_name=data['first_name'],
-            last_name=data['last_name'],
-            email=data['email'],
-            password=data['password']
-        )
-        login(request, user)  # Log the user in
-        return JsonResponse({'id': user.id, 'username': user.username}, status=201)
+        try:
+            user = User.objects.create_user(
+                username=data['username'],
+                first_name=data['first_name'],
+                last_name=data['last_name'],
+                email=data['email'],
+                password=data['password']
+            )
+            login(request, user)  # Log the user in
+            return JsonResponse({'id': user.id, 'username': user.username}, status=201)
+        except IntegrityError as e:
+            if 'auth_user_username_key' in str(e):
+                return JsonResponse({'email': 'User with this email already exists.'}, status=400)
+            else:
+                return JsonResponse({'error': 'An error occurred during registration.'}, status=500)
     return JsonResponse({'error': 'Method not allowed'}, status=405)
-
 
 @csrf_exempt
 def login_view(request):
