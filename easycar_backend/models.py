@@ -84,6 +84,27 @@ class Car(models.Model):
     def __str__(self):
         return f'{self.make} {self.model} - {self.year}'
 
-# You may need to run migrations after changing your models.
-# python manage.py makemigrations
-# python manage.py migrate
+
+class Booking(models.Model):
+    STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('confirmed', 'Confirmed'),
+        ('completed', 'Completed'),
+        ('canceled', 'Canceled'),
+    )
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='bookings')
+    car = models.ForeignKey('Car', on_delete=models.CASCADE, related_name='bookings')
+    start_date = models.DateField()
+    end_date = models.DateField()
+    total_price = models.DecimalField(max_digits=10, decimal_places=2, editable=False, blank=True, null=True)  # Optionally calculated in save method
+    status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='pending')
+    booking_location = models.CharField(max_length=255, blank=True, null=True)  # Optional, use if booking location varies
+
+    def save(self, *args, **kwargs):
+        # Calculate total price based on the car's price per day and the number of booking days
+        booking_duration = (self.end_date - self.start_date).days + 1  # +1 to include both start and end dates in the booking duration
+        self.total_price = booking_duration * self.car.price_per_day
+        super(Booking, self).save(*args, **kwargs)
+
+    def __str__(self):
+        return f'Booking {self.id} by {self.user}'

@@ -1,8 +1,9 @@
+from jupyter_client.jsonutil import parse_date
 from rest_framework import generics, status
 from django.contrib.auth.models import User
 from django.contrib.auth import login, logout, authenticate
 from django.http import JsonResponse, Http404
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.contrib.auth.hashers import make_password
 import json
 from rest_framework.decorators import api_view, parser_classes, permission_classes
@@ -12,10 +13,12 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.views import APIView
-from .models import Car
+from .models import Car, Booking
 from .serializers import CarSerializer
 from .serializers import PaymentSerializer
 from rest_framework.response import Response
+
+
 class PaymentView(APIView):
     def post(self, request, *args, **kwargs):
         serializer = PaymentSerializer(data=request.data)
@@ -25,19 +28,37 @@ class PaymentView(APIView):
             return Response(serializer.validated_data, status=200)
         return Response(serializer.errors, status=400)
 
+
 class CarListCreateView(generics.ListCreateAPIView):
     queryset = Car.objects.all()
     serializer_class = CarSerializer
 
-@csrf_exempt 
+@csrf_exempt
 def create_booking(request):
     if request.method == 'POST':
-        # Logic to handle booking creation goes here
-        # For example, save booking details to the database
-        
-        return JsonResponse({'message': 'Booking created successfully'}, status=201)
+        try:
+            data = json.loads(request.body)
+            user = request.user
+            car_id = data['car_id']
+            start_date = parse_date(data['start_date'])
+            end_date = parse_date(data['end_date'])
+            booking_location = data.get('booking_location', '')  # Optional, based on your model
+
+            booking = Booking.objects.create(
+                user=user,
+                car_id=car_id,
+                start_date=start_date,
+                end_date=end_date,
+                booking_location=booking_location,
+            )
+            # The Booking model's save method automatically calculates total_price.
+
+            return JsonResponse({"success": True, "booking_id": booking.id}, status=201)
+        except Exception as e:
+            return JsonResponse({"success": False, "error": str(e)}, status=400)
     else:
-        return HttpResponseBadRequest('Invalid request method')
+        return JsonResponse({"success": False, "error": "Only POST requests are allowed."}, status=405)
+
 
 @api_view(['POST'])
 @parser_classes((MultiPartParser, FormParser))
@@ -66,6 +87,7 @@ class CarDetailsView(generics.RetrieveUpdateDestroyAPIView):
             return Response(serializer.data)
         except Car.DoesNotExist:
             raise NotFound('A car with this ID does not exist.')
+
 
 @csrf_exempt
 def register(request):
