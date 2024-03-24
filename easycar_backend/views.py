@@ -15,30 +15,31 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.views import APIView
 from .models import Car, Booking
 from .serializers import CarSerializer
-from .serializers import PaymentSerializer
+# from .serializers import PaymentSerializer
 from rest_framework.response import Response
 
 
-class PaymentView(APIView):
-    def post(self, request, *args, **kwargs):
-        serializer = PaymentSerializer(data=request.data)
-        if serializer.is_valid():
-            # Process the payment here
-            # For now, we'll just return the validated data
-            return Response(serializer.validated_data, status=200)
-        return Response(serializer.errors, status=400)
+# class PaymentView(APIView):
+#     def post(self, request, *args, **kwargs):
+#         serializer = PaymentSerializer(data=request.data)
+#         if serializer.is_valid():
+#             # Process the payment here
+#             # For now, we'll just return the validated data
+#             return Response(serializer.validated_data, status=200)
+#         return Response(serializer.errors, status=400)
 
 
 class CarListCreateView(generics.ListCreateAPIView):
     queryset = Car.objects.all()
     serializer_class = CarSerializer
 
-@csrf_exempt
+
 def create_booking(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
             user = request.user
+            print(user)
             car_id = data['car_id']
             start_date = parse_date(data['start_date'])
             end_date = parse_date(data['end_date'])
@@ -51,7 +52,6 @@ def create_booking(request):
                 end_date=end_date,
                 booking_location=booking_location,
             )
-            # The Booking model's save method automatically calculates total_price.
 
             return JsonResponse({"success": True, "booking_id": booking.id}, status=201)
         except Exception as e:
@@ -89,7 +89,7 @@ class CarDetailsView(generics.RetrieveUpdateDestroyAPIView):
             raise NotFound('A car with this ID does not exist.')
 
 
-@csrf_exempt
+@csrf_protect
 def register(request):
     if request.method == 'POST':
         data = json.loads(request.body)
@@ -110,7 +110,7 @@ def register(request):
     return JsonResponse({'error': 'Method not allowed'}, status=405)
 
 
-@csrf_exempt
+@csrf_protect
 def login_view(request):
     if request.method == 'POST':
         data = json.loads(request.body)
@@ -131,7 +131,7 @@ def login_view(request):
     return JsonResponse({'error': 'Method not allowed'}, status=405)
 
 
-@csrf_exempt
+@csrf_protect
 def logout_view(request):
     if request.method == 'POST':
         logout(request)
