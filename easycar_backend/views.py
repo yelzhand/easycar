@@ -89,7 +89,7 @@ class CarDetailsView(generics.RetrieveUpdateDestroyAPIView):
             raise NotFound('A car with this ID does not exist.')
 
 
-@csrf_protect
+@csrf_exempt
 def register(request):
     if request.method == 'POST':
         data = json.loads(request.body)
@@ -110,7 +110,7 @@ def register(request):
     return JsonResponse({'error': 'Method not allowed'}, status=405)
 
 
-@csrf_protect
+@csrf_exempt
 def login_view(request):
     if request.method == 'POST':
         data = json.loads(request.body)
@@ -131,7 +131,7 @@ def login_view(request):
     return JsonResponse({'error': 'Method not allowed'}, status=405)
 
 
-@csrf_protect
+@csrf_exempt
 def logout_view(request):
     if request.method == 'POST':
         logout(request)
