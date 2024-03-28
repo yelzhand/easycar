@@ -1,8 +1,9 @@
+from jupyter_client.jsonutil import parse_date
 from rest_framework import generics, status
 from django.contrib.auth.models import User
 from django.contrib.auth import login, logout, authenticate
 from django.http import HttpResponseBadRequest, JsonResponse, Http404
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.contrib.auth.hashers import make_password
 import json
 from rest_framework.decorators import api_view, parser_classes, permission_classes
@@ -12,9 +13,9 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.views import APIView
-from .models import Car
+from .models import Car, Booking
 from .serializers import CarSerializer
-from .serializers import PaymentSerializer
+# from .serializers import PaymentSerializer
 from rest_framework.response import Response
 from django.db import IntegrityError
 from django.contrib.auth.models import User
@@ -91,15 +92,33 @@ class CarListCreateView(generics.ListCreateAPIView):
     queryset = Car.objects.all()
     serializer_class = CarSerializer
 
-@csrf_exempt 
+
 def create_booking(request):
     if request.method == 'POST':
-        # Logic to handle booking creation goes here
-        # For example, save booking details to the database
-        
-        return JsonResponse({'message': 'Booking created successfully'}, status=201)
+        try:
+            data = json.loads(request.body)
+            user = request.user
+            print(user)
+            car_id = data['car_id']
+            start_date = parse_date(data['start_date'])
+            end_date = parse_date(data['end_date'])
+            booking_location = data.get('booking_location', '')  # Optional, based on your model
+
+            booking = Booking.objects.create(
+                user=user,
+                car_id=car_id,
+                start_date=start_date,
+                end_date=end_date,
+                booking_location=booking_location,
+            )
+
+            return JsonResponse({"success": True, "booking_id": booking.id}, status=201)
+        except Exception as e:
+            return JsonResponse({"success": False, "error": str(e)}, status=400)
     else:
-        return HttpResponseBadRequest('Invalid request method')
+        return JsonResponse({"success": False, "error": "Only POST requests are allowed."}, status=405)
+
+
 @api_view(['POST'])
 @parser_classes((MultiPartParser, FormParser))
 @permission_classes([IsAuthenticated])  # Ensure that the user is authenticated
@@ -135,6 +154,7 @@ class CarDetailsView(generics.RetrieveUpdateDestroyAPIView):
             return Response(serializer.data)
         except Car.DoesNotExist:
             raise NotFound('A car with this ID does not exist.')
+
 
 @csrf_exempt
 def register(request):
