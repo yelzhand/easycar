@@ -15,7 +15,9 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.views import APIView
 from .models import Car, Booking
 from .serializers import CarSerializer
-# from .serializers import PaymentSerializer
+from .serializers import PaymentSerializer
+from .serializers import BookingSerializer
+
 from rest_framework.response import Response
 from django.db import IntegrityError
 from django.contrib.auth.models import User
@@ -27,6 +29,26 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.contrib.auth import update_session_auth_hash
 from rest_framework import status
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+
+@csrf_exempt
+def upload_license(request):
+    if request.method == 'POST':
+        file = request.FILES['licenseFile']
+        mobile_phone = request.POST['mobilePhone']
+        
+        # Perform your validation here
+
+        # Save file to your media root
+        file_name = default_storage.save(file.name, ContentFile(file.read()))
+
+        # Here you can also save file details to your model if needed
+        # ...
+
+        return JsonResponse({'message': 'File uploaded successfully!', 'file_path': file_name}, status=200)
+
+    return JsonResponse({'message': 'This method is not allowed'}, status=405)
 def validate_new_password(password):
     # Check if password is at least 8 characters long
     if len(password) < 8:
@@ -74,6 +96,13 @@ def get_user_info(request):
     }
     return Response(user_data)
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def list_bookings(request):
+    user = request.user
+    bookings = Booking.objects.filter(user=user)
+    serializer = BookingSerializer(bookings, many=True)
+    return Response(serializer.data)
 
 
 class PaymentView(APIView):
@@ -93,30 +122,30 @@ class CarListCreateView(generics.ListCreateAPIView):
     serializer_class = CarSerializer
 
 
-def create_booking(request):
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            user = request.user
-            print(user)
-            car_id = data['car_id']
-            start_date = parse_date(data['start_date'])
-            end_date = parse_date(data['end_date'])
-            booking_location = data.get('booking_location', '')  # Optional, based on your model
+# def create_booking(request):
+#     if request.method == 'POST':
+#         try:
+#             data = json.loads(request.body)
+#             user = request.user
+#             print(user)
+#             car_id = data['car_id']
+#             start_date = parse_date(data['start_date'])
+#             end_date = parse_date(data['end_date'])
+#             booking_location = data.get('booking_location', '')  # Optional, based on your model
 
-            booking = Booking.objects.create(
-                user=user,
-                car_id=car_id,
-                start_date=start_date,
-                end_date=end_date,
-                booking_location=booking_location,
-            )
+#             booking = Booking.objects.create(
+#                 user=user,
+#                 car_id=car_id,
+#                 start_date=start_date,
+#                 end_date=end_date,
+#                 booking_location=booking_location,
+#             )
 
-            return JsonResponse({"success": True, "booking_id": booking.id}, status=201)
-        except Exception as e:
-            return JsonResponse({"success": False, "error": str(e)}, status=400)
-    else:
-        return JsonResponse({"success": False, "error": "Only POST requests are allowed."}, status=405)
+#             return JsonResponse({"success": True, "booking_id": booking.id}, status=201)
+#         except Exception as e:
+#             return JsonResponse({"success": False, "error": str(e)}, status=400)
+#     else:
+#         return JsonResponse({"success": False, "error": "Only POST requests are allowed."}, status=405)
 
 
 @api_view(['POST'])
